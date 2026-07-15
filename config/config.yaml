@@ -1,0 +1,94 @@
+# =============================================================================
+# PipelineSLA-Telemetry :: Global runtime configuration
+# -----------------------------------------------------------------------------
+# Every threshold in the forecasting + detection engine is externalised here so
+# that operations teams can tune sensitivity without shipping new code.
+# =============================================================================
+
+project:
+  name: pipeline-sla-telemetry
+  version: 1.0.0
+
+airflow:
+  base_url: "http://localhost:8080"
+  api_version: "v1"
+  auth:
+    # one of: token | basic | none
+    method: "token"
+    token: "${AIRFLOW_API_TOKEN}"
+    username: "${AIRFLOW_USERNAME}"
+    password: "${AIRFLOW_PASSWORD}"
+  request:
+    page_size: 100
+    max_retries: 5
+    backoff_factor: 0.5
+    timeout_seconds: 30.0
+    verify_ssl: true
+
+storage:
+  # persistent analytical warehouse; set :memory: for zero-disk benchmarking
+  database_path: "data/telemetry.duckdb"
+  parquet_dir: "data/parquet"
+  in_memory: false
+
+sla:
+  # Morning business cutoff. Executive dashboards must be refreshed before this.
+  morning_cutoff: "07:00"
+  timezone: "Asia/Kolkata"
+  default_attainment_target: 99.0
+  warning_attainment_target: 95.0
+
+forecast:
+  distribution_primary: "weibull"
+  distribution_secondary: "lognorm"
+  min_samples_for_fit: 20
+  breach_probability_alert: 0.35
+  breach_probability_critical: 0.65
+  percentile_bands: [50, 85, 95]
+
+detection:
+  cusum:
+    # slack (k) and decision threshold (h) expressed in units of sigma
+    slack_k: 0.5
+    threshold_h: 5.0
+    two_sided: true
+  zscore:
+    window: 14
+    alert_z: 3.0
+    min_periods: 7
+  volume:
+    # a technically-successful run whose row count collapses below this ratio
+    # of the seasonal baseline is a "silent empty run"
+    empty_run_ratio: 0.05
+    baseline_window_days: 28
+
+lineage:
+  tier_weights:
+    TIER_1: 5.0
+    TIER_2: 3.0
+    TIER_3: 1.5
+    TIER_4: 0.75
+  audience_scale:
+    BOARD: 10000
+    EXECUTIVE: 5000
+    MANAGEMENT: 1000
+    OPERATIONAL: 250
+    ANALYST: 50
+  escalation:
+    low: 0.0
+    elevated: 5000.0
+    critical: 25000.0
+
+reporting:
+  output_dir: "reports"
+  excel:
+    filename: "weekly_pipeline_health.xlsx"
+    sheets: ["Executive Overview", "SLA Breach Log", "Task Percentiles"]
+  pptx:
+    filename: "monday_operations_review.pptx"
+    title: "Monday Morning Operations Review"
+
+dashboard:
+  title: "PipelineSLA Telemetry Cockpit"
+  refresh_seconds: 60
+  simple_browser_url: "http://localhost:8501"

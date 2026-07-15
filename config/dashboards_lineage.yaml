@@ -1,0 +1,127 @@
+# =============================================================================
+# PipelineSLA-Telemetry :: Dashboard lineage & downstream business impact map
+# -----------------------------------------------------------------------------
+# Connects upstream ETL task outputs (staging tables / mart loads) to the
+# client-facing BI dashboards they ultimately refresh. Drives the Blast Radius
+# Index calculation in pipeline_sla.lineage.blast_radius.
+# =============================================================================
+
+dashboards:
+  - dashboard_id: dash_exec_revenue_pulse
+    dashboard_name: "Executive Revenue Pulse"
+    business_tower: "Commercial"
+    criticality_tier: "TIER_1"
+    parent_task_id: load_sales_fact
+    parent_dag_id: sales_ingestion_etl
+    audience: "BOARD"
+    audience_size: 18000
+    target_sla_time: "07:00"
+    platform: "Power BI"
+
+  - dashboard_id: dash_cfo_finance_close
+    dashboard_name: "CFO Finance Close Cockpit"
+    business_tower: "Finance"
+    criticality_tier: "TIER_1"
+    parent_task_id: load_finance_mart
+    parent_dag_id: gl_financial_reconciliation
+    audience: "EXECUTIVE"
+    audience_size: 6400
+    target_sla_time: "07:00"
+    platform: "Tableau"
+
+  - dashboard_id: dash_risk_exposure_board
+    dashboard_name: "Risk Exposure Board"
+    business_tower: "Risk"
+    criticality_tier: "TIER_1"
+    parent_task_id: publish_risk_ratings
+    parent_dag_id: risk_credit_scoring
+    audience: "EXECUTIVE"
+    audience_size: 4200
+    target_sla_time: "07:00"
+    platform: "Power BI"
+
+  - dashboard_id: dash_customer_health_360
+    dashboard_name: "Customer Health 360"
+    business_tower: "Customer Experience"
+    criticality_tier: "TIER_2"
+    parent_task_id: publish_customer_360
+    parent_dag_id: crm_customer_360
+    audience: "MANAGEMENT"
+    audience_size: 1350
+    target_sla_time: "07:30"
+    platform: "Tableau"
+
+  - dashboard_id: dash_supply_chain_control
+    dashboard_name: "Supply Chain Control Tower"
+    business_tower: "Supply Chain"
+    criticality_tier: "TIER_2"
+    parent_task_id: load_inventory_mart
+    parent_dag_id: inventory_sync_dag
+    audience: "MANAGEMENT"
+    audience_size: 980
+    target_sla_time: "07:30"
+    platform: "Power BI"
+
+  - dashboard_id: dash_marketing_roi_daily
+    dashboard_name: "Marketing ROI Daily"
+    business_tower: "Marketing"
+    criticality_tier: "TIER_3"
+    parent_task_id: score_touchpoints
+    parent_dag_id: marketing_attribution
+    audience: "ANALYST"
+    audience_size: 420
+    target_sla_time: "08:00"
+    platform: "Looker"
+
+  - dashboard_id: dash_ops_ingestion_health
+    dashboard_name: "Ops Ingestion Health Monitor"
+    business_tower: "Data Platform"
+    criticality_tier: "TIER_3"
+    parent_task_id: stage_sales_orders
+    parent_dag_id: sales_ingestion_etl
+    audience: "OPERATIONAL"
+    audience_size: 260
+    target_sla_time: "06:30"
+    platform: "Tableau"
+
+  - dashboard_id: dash_demand_forecast_console
+    dashboard_name: "Demand Forecast Console"
+    business_tower: "Supply Chain"
+    criticality_tier: "TIER_2"
+    parent_task_id: sync_reorder_points
+    parent_dag_id: inventory_sync_dag
+    audience: "MANAGEMENT"
+    audience_size: 740
+    target_sla_time: "08:00"
+    platform: "Power BI"
+
+  - dashboard_id: dash_credit_portfolio_watch
+    dashboard_name: "Credit Portfolio Watch"
+    business_tower: "Risk"
+    criticality_tier: "TIER_2"
+    parent_task_id: score_credit_models
+    parent_dag_id: risk_credit_scoring
+    audience: "MANAGEMENT"
+    audience_size: 610
+    target_sla_time: "07:00"
+    platform: "Power BI"
+
+  - dashboard_id: dash_board_pack_weekly
+    dashboard_name: "Board Pack Weekly Digest"
+    business_tower: "Finance"
+    criticality_tier: "TIER_1"
+    parent_task_id: compute_fx_revaluation
+    parent_dag_id: gl_financial_reconciliation
+    audience: "BOARD"
+    audience_size: 22000
+    target_sla_time: "06:00"
+    platform: "PowerPoint"
+
+# Optional intermediate staging nodes (table -> table edges) enriching the graph.
+staging_tables:
+  - { table_id: stg_sales_orders, produced_by: stage_sales_orders, dag_id: sales_ingestion_etl, feeds: [load_sales_fact] }
+  - { table_id: stg_customer_keys, produced_by: dedupe_customer_keys, dag_id: crm_customer_360, feeds: [publish_customer_360] }
+  - { table_id: stg_gl_journal, produced_by: reconcile_subledgers, dag_id: gl_financial_reconciliation, feeds: [compute_fx_revaluation] }
+  - { table_id: stg_wms_stock, produced_by: reconcile_stock_levels, dag_id: inventory_sync_dag, feeds: [load_inventory_mart] }
+  - { table_id: stg_ad_journeys, produced_by: stitch_user_journeys, dag_id: marketing_attribution, feeds: [score_touchpoints] }
+  - { table_id: stg_risk_features, produced_by: compute_risk_features, dag_id: risk_credit_scoring, feeds: [score_credit_models] }

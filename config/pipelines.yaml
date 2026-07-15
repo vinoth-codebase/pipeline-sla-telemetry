@@ -1,0 +1,126 @@
+# =============================================================================
+# PipelineSLA-Telemetry :: Enterprise pipeline estate definition
+# -----------------------------------------------------------------------------
+# Six representative production pipelines spanning revenue, finance, supply
+# chain and risk. Each entry drives the synthetic generator's seasonal profile,
+# failure modes and SLA envelope.
+# =============================================================================
+
+pipelines:
+  - dag_id: sales_ingestion_etl
+    display_name: "Sales Order Ingestion"
+    schedule: "0 1 * * *"
+    business_tower: "Commercial"
+    criticality_tier: "TIER_1"
+    sla_minutes: 30
+    baseline_rows: 185000
+    baseline_duration_seconds: 1380
+    tasks:
+      - { task_id: extract_pos_stream, order: 1, duration_share: 0.25 }
+      - { task_id: stage_sales_orders, order: 2, duration_share: 0.35 }
+      - { task_id: transform_currency_fx, order: 3, duration_share: 0.20 }
+      - { task_id: load_sales_fact, order: 4, duration_share: 0.20 }
+    failure_modes:
+      weekend_volume_drop: 0.42
+      month_end_surge: 1.9
+      silent_empty_run_dates: [42, 97, 151]
+      db_lock_dates: [23, 88, 134]
+
+  - dag_id: crm_customer_360
+    display_name: "CRM Customer 360 Consolidation"
+    schedule: "0 2 * * *"
+    business_tower: "Customer Experience"
+    criticality_tier: "TIER_2"
+    sla_minutes: 40
+    baseline_rows: 92000
+    baseline_duration_seconds: 1740
+    tasks:
+      - { task_id: extract_crm_delta, order: 1, duration_share: 0.30 }
+      - { task_id: dedupe_customer_keys, order: 2, duration_share: 0.30 }
+      - { task_id: enrich_demographics, order: 3, duration_share: 0.20 }
+      - { task_id: publish_customer_360, order: 4, duration_share: 0.20 }
+    failure_modes:
+      weekend_volume_drop: 0.55
+      month_end_surge: 1.25
+      silent_empty_run_dates: [61, 118]
+      db_lock_dates: [34, 129]
+
+  - dag_id: gl_financial_reconciliation
+    display_name: "General Ledger Reconciliation"
+    schedule: "0 23 * * *"
+    business_tower: "Finance"
+    criticality_tier: "TIER_1"
+    sla_minutes: 60
+    baseline_rows: 41000
+    baseline_duration_seconds: 2100
+    tasks:
+      - { task_id: extract_gl_journal, order: 1, duration_share: 0.20 }
+      - { task_id: reconcile_subledgers, order: 2, duration_share: 0.35 }
+      - { task_id: compute_fx_revaluation, order: 3, duration_share: 0.25 }
+      - { task_id: load_finance_mart, order: 4, duration_share: 0.20 }
+    failure_modes:
+      weekend_volume_drop: 0.15
+      month_end_surge: 3.4
+      silent_empty_run_dates: [29, 88]
+      db_lock_dates: [14, 61, 143]
+
+  - dag_id: inventory_sync_dag
+    display_name: "Inventory & Supply Chain Sync"
+    schedule: "0 3 * * *"
+    business_tower: "Supply Chain"
+    criticality_tier: "TIER_2"
+    sla_minutes: 22
+    baseline_rows: 143000
+    baseline_duration_seconds: 1080
+    tasks:
+      - { task_id: extract_wms_snapshot, order: 1, duration_share: 0.30 }
+      - { task_id: reconcile_stock_levels, order: 2, duration_share: 0.30 }
+      - { task_id: sync_reorder_points, order: 3, duration_share: 0.20 }
+      - { task_id: load_inventory_mart, order: 4, duration_share: 0.20 }
+    failure_modes:
+      weekend_volume_drop: 0.35
+      month_end_surge: 1.6
+      silent_empty_run_dates: [77, 155]
+      db_lock_dates: [45, 102]
+
+  - dag_id: marketing_attribution
+    display_name: "Marketing Multi-Touch Attribution"
+    schedule: "0 4 * * *"
+    business_tower: "Marketing"
+    criticality_tier: "TIER_3"
+    sla_minutes: 25
+    baseline_rows: 268000
+    baseline_duration_seconds: 900
+    tasks:
+      - { task_id: extract_ad_events, order: 1, duration_share: 0.35 }
+      - { task_id: stitch_user_journeys, order: 2, duration_share: 0.35 }
+      - { task_id: score_touchpoints, order: 3, duration_share: 0.30 }
+    failure_modes:
+      weekend_volume_drop: 0.28
+      month_end_surge: 1.4
+      silent_empty_run_dates: [52, 121]
+      db_lock_dates: [67]
+
+  - dag_id: risk_credit_scoring
+    display_name: "Risk & Credit Scoring Refresh"
+    schedule: "0 5 * * *"
+    business_tower: "Risk"
+    criticality_tier: "TIER_1"
+    sla_minutes: 34
+    baseline_rows: 63000
+    baseline_duration_seconds: 1560
+    tasks:
+      - { task_id: extract_credit_bureau, order: 1, duration_share: 0.25 }
+      - { task_id: compute_risk_features, order: 2, duration_share: 0.35 }
+      - { task_id: score_credit_models, order: 3, duration_share: 0.25 }
+      - { task_id: publish_risk_ratings, order: 4, duration_share: 0.15 }
+    failure_modes:
+      weekend_volume_drop: 0.48
+      month_end_surge: 2.1
+      silent_empty_run_dates: [35, 110, 167]
+      db_lock_dates: [56, 91]
+
+# Probability an active day experiences an intermittent upstream network timeout.
+network_timeout_probability: 0.07
+# Probability that a stalled task triggers a retry storm on the same run.
+retry_storm_probability: 0.12
