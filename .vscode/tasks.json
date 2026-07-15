@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "install: editable package",
+      "type": "shell",
+      "command": "pip install -e .[dev]",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "generate: 180-day pipeline runs",
+      "type": "shell",
+      "command": "python scripts/generate_pipeline_runs.py --days 180",
+      "group": "build",
+      "dependsOn": [
+        "install: editable package"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "analyze: full estate",
+      "type": "shell",
+      "command": "python -m pipeline_sla.cli analyze --all",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "export: excel + pptx",
+      "type": "shell",
+      "command": "python -m pipeline_sla.cli export --excel --pptx",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "test: pytest with coverage",
+      "type": "shell",
+      "command": "python -m pytest -v --cov=pipeline_sla --cov-report=term-missing",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "screenshots: render vscode svg assets",
+      "type": "shell",
+      "command": "python scripts/generate_vscode_screenshots.py",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "dashboard: streamlit (Simple Browser http://localhost:8501)",
+      "type": "shell",
+      "command": "streamlit run src/pipeline_sla/dashboard/app.py --server.port 8501 --server.headless true",
+      "isBackground": true,
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "open: simple browser dashboard",
+      "type": "shell",
+      "command": "echo 'In VS Code press Cmd/Ctrl+Shift+P -> \"Simple Browser: Show\" -> http://localhost:8501'",
+      "problemMatcher": []
+    }
+  ]
+}

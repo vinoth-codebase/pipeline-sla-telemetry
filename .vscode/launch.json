@@ -1,0 +1,72 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Interactive Analysis (current file)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/interactive_analysis.py",
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src",
+        "PIPELINE_SLA_CONFIG": "${workspaceFolder}/config/config.yaml"
+      }
+    },
+    {
+      "name": "Python: Generate 180-day Pipeline Runs",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pipeline_sla.cli",
+      "args": [
+        "generate",
+        "--days",
+        "180"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Python: Full Analyze + Export",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pipeline_sla.cli",
+      "args": [
+        "analyze",
+        "--all"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Python: Pytest (all tests)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "-v",
+        "--cov=pipeline_sla",
+        "--cov-report=term-missing"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      }
+    },
+    {
+      "name": "Python: Jupyter Notebook Walkthrough",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "jupyter",
+      "args": [
+        "notebook"
+      ],
+      "console": "integratedTerminal"
+    }
+  ]
+}
