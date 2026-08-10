@@ -1,0 +1,46 @@
+# =============================================================================
+# PipelineSLA-Telemetry :: one-command local stack
+# -----------------------------------------------------------------------------
+#   docker compose up --build
+#
+#   dashboard   -> http://localhost:8501  (also embeddable in VS Code Simple Browser)
+#   generator   -> one-shot job that seeds the DuckDB warehouse with 180 days
+# =============================================================================
+services:
+  warehouse-init:
+    build: .
+    image: pipeline-sla-telemetry:1.0.0
+    container_name: pipeline-sla-generator
+    command: >
+      bash -lc "python scripts/generate_pipeline_runs.py --days 180 &&
+                python -m pipeline_sla.cli analyze --all &&
+                python -m pipeline_sla.cli export --excel --pptx"
+    volumes:
+      - pipeline_data:/app/data
+      - pipeline_reports:/app/reports
+    environment:
+      PIPELINE_SLA_CONFIG: /app/config/config.yaml
+    restart: "no"
+
+  dashboard:
+    build: .
+    image: pipeline-sla-telemetry:1.0.0
+    container_name: pipeline-sla-dashboard
+    depends_on:
+      warehouse-init:
+        condition: service_completed_successfully
+    command: >
+      streamlit run src/pipeline_sla/dashboard/app.py
+      --server.port=8501 --server.address=0.0.0.0 --server.headless=true
+    ports:
+      - "8501:8501"
+    volumes:
+      - pipeline_data:/app/data
+      - pipeline_reports:/app/reports
+    environment:
+      PIPELINE_SLA_CONFIG: /app/config/config.yaml
+    restart: unless-stopped
+
+volumes:
+  pipeline_data:
+  pipeline_reports:
