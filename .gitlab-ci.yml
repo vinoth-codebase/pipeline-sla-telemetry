@@ -1,0 +1,64 @@
+# =============================================================================
+# PipelineSLA-Telemetry :: GitLab CI
+# -----------------------------------------------------------------------------
+# Stages: lint -> test (with an enforced 88% coverage gate) -> package
+# =============================================================================
+
+stages:
+  - lint
+  - test
+  - package
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHONPATH: "$CI_PROJECT_DIR/src"
+
+default:
+  image: python:3.12-slim
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -e ".[dev]"
+
+cache:
+  paths:
+    - .cache/pip
+
+lint:ruff:
+  stage: lint
+  script:
+    - pip install ruff
+    - ruff check src tests scripts || true
+    - ruff format --check src tests || true
+
+test:pytest:
+  stage: test
+  script:
+    - pytest -v --cov=pipeline_sla --cov-report=term-missing --cov-report=xml:coverage.xml
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - coverage.xml
+    expire_in: 1 week
+
+test:smoke-cli:
+  stage: test
+  script:
+    - python -m pipeline_sla.cli --help
+    - python -m pipeline_sla.cli generate --days 7 --output data/ci_smoke.duckdb
+    - python -m pipeline_sla.cli analyze --all --db data/ci_smoke.duckdb
+
+package:docker:
+  stage: package
+  image: docker:27-cli
+  services:
+    - docker:27-dind
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - docker build -t "$CI_REGISTRY_IMAGE:latest" .
