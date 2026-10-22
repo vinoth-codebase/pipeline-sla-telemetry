@@ -294,24 +294,6 @@ pipeline-sla export --excel
 
 ---
 
-## Embedded Visual SVG Previews
-
-| VS Code Python Interactive — Weibull forecast | VS Code split editor — CUSUM anomaly |
-|---|---|
-| ![Weibull forecast](docs/screenshots/vscode_interactive_weibull_forecast.svg) | ![CUSUM anomaly](docs/screenshots/vscode_cusum_anomaly_explorer.svg) |
-
-| VS Code Simple Browser — Streamlit cockpit | VS Code Excel Viewer — operations ledger |
-|---|---|
-| ![Simple Browser dashboard](docs/screenshots/vscode_simple_browser_dashboard.svg) | ![Excel viewer](docs/screenshots/vscode_excel_viewer_operations_ledger.svg) |
-
-Regenerate these assets at any time with:
-
-```bash
-python scripts/generate_vscode_screenshots.py
-```
-
----
-
 ## Quickstart
 
 ```bash
